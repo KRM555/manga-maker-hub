@@ -1,5 +1,12 @@
-import { useCallback, useRef, useState } from "react";
-import { UploadCloud, FileImage, FileArchive, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  UploadCloud,
+  FileImage,
+  FileArchive,
+  Sparkles,
+  X,
+  Plus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
