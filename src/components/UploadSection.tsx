@@ -91,6 +91,10 @@ export function UploadSection() {
     });
   }, [files]);
 
+  useEffect(() => {
+    console.log("previewUrls changed:", Array.from(previewUrls.entries()));
+  }, [previewUrls]);
+
   const langLabel: Record<string, string> = {
     ar: "Arabic",
     en: "English",
