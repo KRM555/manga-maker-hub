@@ -43,6 +43,7 @@ function download(name: string, content: string) {
 }
 
 export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
+  const { t } = useI18n();
   const {
     pages,
     activePage,
