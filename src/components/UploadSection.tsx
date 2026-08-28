@@ -179,8 +179,7 @@ export function UploadSection() {
       <div className="flex flex-col gap-6">
         {/* Dropzone — full width */}
         <div>
-          <button
-            type="button"
+          <div
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => {
               e.preventDefault();
@@ -189,24 +188,105 @@ export function UploadSection() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={onDrop}
             className={cn(
-              "flex min-h-64 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-dropzone p-8 text-center transition-colors",
+              "relative flex min-h-64 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-dropzone p-4 text-center transition-colors sm:p-6",
               isDragging
                 ? "border-primary bg-accent"
                 : "border-dropzone-border hover:border-primary/60",
+              files.length > 0 && "justify-start",
             )}
           >
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <UploadCloud className="size-7" />
-            </div>
-            <div>
-              <p className="text-base font-semibold">{t("uploadTitle")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("uploadDesc")}
-              </p>
-            </div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground">
-              {t("uploadFormats")}
-            </p>
+            {files.length === 0 ? (
+              <>
+                <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <UploadCloud className="size-7" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold">{t("uploadTitle")}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("uploadDesc")}
+                  </p>
+                </div>
+                <p className="text-xs font-medium tracking-wide text-muted-foreground">
+                  {t("uploadFormats")}
+                </p>
+              </>
+            ) : (
+              <div className="w-full">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+                    {files.some((f) => f.name.toLowerCase().endsWith(".zip")) ? (
+                      <FileArchive className="size-3.5" />
+                    ) : (
+                      <FileImage className="size-3.5" />
+                    )}
+                    {files.length} {t("filesReady")}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFiles([]);
+                    }}
+                  >
+                    <X className="size-3.5" />
+                    {t("clearFiles")}
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                  {files.map((file, index) => {
+                    const isImg = isImage(file);
+                    const preview = isImg
+                      ? previewMap.current.get(file.name)
+                      : null;
+                    return (
+                      <div
+                        key={`${file.name}-${index}`}
+                        className="group relative aspect-square overflow-hidden rounded-xl border bg-muted"
+                      >
+                        {isImg && preview ? (
+                          <img
+                            src={preview}
+                            alt={file.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-2 text-muted-foreground">
+                            <FileArchive className="size-8" />
+                            <span className="line-clamp-2 text-xs font-medium">
+                              {file.name}
+                            </span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          aria-label={t("removeImage")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFiles((prev) =>
+                              prev.filter((_, i) => i !== index),
+                            );
+                          }}
+                          className="absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-sm transition-opacity hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100 focus:opacity-100"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary"
+                  >
+                    <Plus className="size-6" />
+                    <span className="text-xs font-medium">{t("addMore")}</span>
+                  </button>
+                </div>
+              </div>
+            )}
             <input
               ref={inputRef}
               type="file"
@@ -218,29 +298,7 @@ export function UploadSection() {
                 e.target.value = "";
               }}
             />
-          </button>
-
-          {files.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
-                {files.some((f) => f.name.endsWith(".zip")) ? (
-                  <FileArchive className="size-3.5" />
-                ) : (
-                  <FileImage className="size-3.5" />
-                )}
-                {files.length} {t("filesReady")}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs"
-                onClick={() => setFiles([])}
-              >
-                <X className="size-3.5" />
-                {t("clearFiles")}
-              </Button>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Settings card — full width below dropzone */}
