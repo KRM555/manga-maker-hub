@@ -167,6 +167,35 @@ export function Header() {
             </div>
           </div>
 
+          {/* Gemini API Key (masked) */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+                <div className="relative min-w-0 max-w-md flex-1">
+                  <KeyRound className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={t("geminiApiKeyPlaceholder")}
+                    aria-label={t("geminiApiKey")}
+                    className="h-9 w-full min-w-0 rounded-r-none ps-8 pe-3 text-xs"
+                  />
+                </div>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("tooltipGetApiKey")}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-r-md border border-l-0 border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <ExternalLink className="size-4" />
+                </a>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{t("tooltipApiKey")}</TooltipContent>
+          </Tooltip>
+
           <div className="ms-auto flex flex-nowrap items-center justify-end gap-2 overflow-hidden">
             {/* Language switcher */}
             <DropdownMenu>
@@ -206,6 +235,28 @@ export function Header() {
               <TooltipContent>{t("themeToggle")}</TooltipContent>
             </Tooltip>
 
+            {/* Discord */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  asChild
+                  aria-label={t("discord")}
+                  className="size-9 shrink-0"
+                >
+                  <a
+                    href="https://discord.gg/nuaqTHvx"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <DiscordIcon className="size-4" />
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("tooltipDiscord")}</TooltipContent>
+            </Tooltip>
+
             {/* Login / Register */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -215,77 +266,6 @@ export function Header() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t("tooltipLogin")}</TooltipContent>
-            </Tooltip>
-
-            {/* New Project */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="shrink-0 gap-1.5"
-                  onClick={() => {
-                    setPages([]);
-                    setActivePage(0);
-                    setView("upload");
-                  }}
-                >
-                  <FolderPlus className="size-4 shrink-0" />
-                  <span className="hidden lg:inline">{t("newProject")}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("tooltipNewProject")}</TooltipContent>
-            </Tooltip>
-
-            {/* Dictionary */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => setDictOpen(true)}>
-                  <BookMarked className="size-4 shrink-0" />
-                  <span className="hidden xl:inline">{t("dictionary")}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("tooltipDictionary")}</TooltipContent>
-            </Tooltip>
-
-            {/* Tags Settings */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => setTagsOpen(true)}>
-                  <Tags className="size-4 shrink-0" />
-                  <span className="hidden xl:inline">{t("tagsSettings")}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("tooltipTags")}</TooltipContent>
-            </Tooltip>
-
-            {/* Gemini API Key (masked) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex min-w-0 shrink items-center">
-                  <div className="relative min-w-0 shrink">
-                    <KeyRound className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder={t("geminiApiKeyPlaceholder")}
-                      aria-label={t("geminiApiKey")}
-                      className="h-9 w-32 min-w-0 rounded-r-none ps-8 pe-3 text-xs sm:w-44 md:w-56"
-                    />
-                  </div>
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={t("tooltipGetApiKey")}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-r-md border border-l-0 border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <ExternalLink className="size-4" />
-                  </a>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>{t("tooltipApiKey")}</TooltipContent>
             </Tooltip>
           </div>
         </div>
