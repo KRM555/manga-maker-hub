@@ -69,6 +69,80 @@ export function Header() {
     <TooltipProvider delayDuration={200}>
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex min-h-16 h-auto max-w-7xl flex-nowrap items-center gap-2 overflow-hidden px-4 py-2.5 sm:gap-3 sm:px-6">
+          {/* Hamburger menu / sidebar */}
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label={t("menu")} className="size-9 shrink-0">
+                    <Menu className="size-4" />
+                  </Button>
+                </SheetTrigger>
+              </TooltipTrigger>
+              <TooltipContent>{t("menu")}</TooltipContent>
+            </Tooltip>
+            <SheetContent side={dir === "rtl" ? "right" : "left"} dir={dir} className="w-80 sm:w-96">
+              <SheetHeader>
+                <SheetTitle>{t("menu")}</SheetTitle>
+                <SheetDescription>{t("menuDesc")}</SheetDescription>
+              </SheetHeader>
+
+              <div className="flex flex-col gap-6 px-4 pb-6">
+                {/* API key persistence */}
+                <div className="flex flex-col gap-3 rounded-lg border p-4">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="size-4 text-muted-foreground" />
+                    <p className="text-sm font-semibold">{t("apiKeySectionTitle")}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("apiKeySectionDesc")}</p>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="sidebar-api-key">{t("geminiApiKey")}</Label>
+                    <Input
+                      id="sidebar-api-key"
+                      type="password"
+                      value={apiKeyDraft}
+                      onChange={(e) => setApiKeyDraft(e.target.value)}
+                      placeholder={t("geminiApiKeyPlaceholder")}
+                      className="text-sm"
+                    />
+                  </div>
+                  <Button onClick={saveApiKey} className="gap-1.5">
+                    <Save className="size-4" /> {t("save")}
+                  </Button>
+                </div>
+
+                <Separator />
+
+                {/* Quick actions */}
+                <div className="flex flex-col gap-2">
+                  <Button variant="outline" className="justify-start gap-2" onClick={startNewProject}>
+                    <FolderPlus className="size-4" /> {t("newProject")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => {
+                      setSheetOpen(false);
+                      setTagsOpen(true);
+                    }}
+                  >
+                    <Tags className="size-4" /> {t("tagsSettings")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => {
+                      setSheetOpen(false);
+                      setDictOpen(true);
+                    }}
+                  >
+                    <BookMarked className="size-4" /> {t("dictionary")}
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           {/* Logo */}
           <div className="flex shrink-0 items-center gap-2.5">
             <img
