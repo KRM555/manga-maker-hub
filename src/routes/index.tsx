@@ -1,24 +1,73 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { I18nProvider } from "@/lib/i18n";
+import { ThemeProvider } from "@/lib/theme";
+import { Header } from "@/components/Header";
+import { Onboarding } from "@/components/Onboarding";
+import { UploadSection } from "@/components/UploadSection";
+import { Workspace } from "@/components/Workspace";
+import { StudioProvider, useStudio } from "@/lib/studio";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Manhwa Transtool Studio — AI Manga Translation Workspace" },
+      {
+        name: "description",
+        content:
+          "Upload manga and manhwa pages, extract text with AI, manage dictionaries and tags, and export consistent translations — bilingual EN/AR interface.",
+      },
+      {
+        property: "og:title",
+        content: "Manhwa Transtool Studio — AI Manga Translation Workspace",
+      },
+      {
+        property: "og:description",
+        content:
+          "Upload pages, extract text, translate with AI, and export — with dictionary and tag management for consistent results.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <ThemeProvider>
+      <I18nProvider>
+        <StudioProvider>
+          <div className="min-h-screen bg-background text-foreground">
+            <Header />
+            <main>
+              <StudioBody />
+            </main>
+          </div>
+          <Toaster />
+        </StudioProvider>
+      </I18nProvider>
+    </ThemeProvider>
+  );
+}
+
+function StudioBody() {
+  const { view, setView } = useStudio();
+  return (
+    <>
+      <div className={view === "workspace" ? "hidden" : undefined}>
+        <Onboarding />
+        <UploadSection />
+      </div>
+      {view === "workspace" && (
+        <Workspace
+          onReanalyze={() => {
+            setView("upload");
+            toast.info("Adjust your settings, then run Analyze again");
+          }}
+        />
+      )}
+    </>
   );
 }
