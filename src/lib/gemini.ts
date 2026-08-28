@@ -7,7 +7,7 @@ export interface ExtractedChunk {
   original: string;
   translated: string;
   tag: string;
-  topPercent?: number;
+  topPercent?: number | undefined;
 }
 
 export function fileToBase64(file: File): Promise<{ mimeType: string; data: string }> {

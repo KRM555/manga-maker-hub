@@ -26,6 +26,7 @@ export interface Paragraph {
   original: string;
   translated: string;
   tagId: string;
+  topPercent?: number | undefined;
 }
 
 export interface StudioPage {
