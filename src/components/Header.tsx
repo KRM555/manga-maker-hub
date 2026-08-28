@@ -1,7 +1,17 @@
-import { Languages, Moon, Sun, BookMarked, Tags, KeyRound, FolderPlus, LogIn, ExternalLink } from "lucide-react";
+import { Languages, Moon, Sun, BookMarked, Tags, KeyRound, FolderPlus, LogIn, ExternalLink, Menu, Save } from "lucide-react";
 import logoAsset from "@/assets/logo.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,8 +26,9 @@ import {
 } from "@/components/ui/tooltip";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStudio } from "@/lib/studio";
+import { toast } from "sonner";
 import { AuthDialog } from "@/components/dialogs/AuthDialog";
 import { DictionaryDialog } from "@/components/dialogs/DictionaryDialog";
 import { TagsDialog } from "@/components/dialogs/TagsDialog";
