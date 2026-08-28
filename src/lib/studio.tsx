@@ -41,6 +41,10 @@ export const DEFAULT_TAGS: TagDef[] = [
   { id: "thought", name: "Thought", prefix: "(", suffix: ")" },
   { id: "scream", name: "Scream", prefix: "<", suffix: ">" },
   { id: "system", name: "System", prefix: "[", suffix: "]" },
+  { id: "phone", name: "Phone", prefix: "☏ ", suffix: "" },
+  { id: "narrator", name: "Narrator", prefix: "▸ ", suffix: "" },
+  { id: "sfx", name: "SFX", prefix: "*", suffix: "*" },
+  { id: "whisper", name: "Whisper", prefix: "❝", suffix: "❞" },
 ];
 
 const uid = () => Math.random().toString(36).slice(2, 10);
