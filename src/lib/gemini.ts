@@ -7,6 +7,7 @@ export interface ExtractedChunk {
   original: string;
   translated: string;
   tag: string;
+  topPercent?: number;
 }
 
 export function fileToBase64(file: File): Promise<{ mimeType: string; data: string }> {
@@ -32,32 +33,38 @@ function buildPrompt(opts: {
   detectVertical: boolean;
 }) {
   const tagList = opts.tags
-    .map((t) => `- id "${t.id}" (${t.name}): wraps text as ${t.prefix}text${t.suffix}`)
+    .map((t) => `${t.id} (${t.name}) (Prefix: ${t.prefix}, Suffix: ${t.suffix})`)
     .join("\n");
   const dict = opts.dictionary.length
     ? opts.dictionary.map((d) => `- "${d.term}" => "${d.replacement}"`).join("\n")
     : "(none)";
 
-  return `You are a professional manga/manhwa translator and OCR engine.
+  return `Analyze the provided manga/webtoon image top-to-bottom:
 
-Task: read the provided comic page image, extract every text chunk in natural reading order
-(right-to-left for Japanese manga, top-to-bottom for Korean webtoons), then translate each chunk
-into ${opts.targetLanguage}.
-
-Available formatting tags (choose the most contextually appropriate one per chunk):
-${tagList}
-
-Glossary — these replacements are mandatory in the translation:
-${dict}
+1. Extract all original text blocks in reading order
+   (right-to-left for Japanese manga, top-to-bottom for Korean webtoons).
+2. Estimate "topPercent" (0 to 100) — the vertical location of the block on the page,
+   where 0 is the very top of the image and 100 is the very bottom.
+3. Visually and contextually analyze each text bubble/block and automatically classify it
+   into the most accurate "category" from this list:
+   ${tagList}
+   Choose the category that best matches the block's visual style and context
+   (e.g. a speech bubble is dialogue, a cloud-shaped bubble is thought, a jagged burst is
+   scream, a rectangular UI-like box is system, a phone-screen bubble is phone, a
+   floating caption box is narrator, onomatopoeia drawn in the art is sfx, small faint
+   text in a bubble is whisper).
+4. Translate each text block into ${opts.targetLanguage}.
+5. Adhere strictly to the glossary's terminology and naming conventions:
+   ${dict}
 
 Rules:
 - ${opts.extractSfx ? "Include sound effects (SFX)." : "Skip sound effects (SFX)."}
 - ${opts.detectVertical ? "Detect and correctly order vertical text." : "Assume horizontal text."}
 - Keep the "original" field as the raw source text exactly as it appears.
-- Do not add the tag characters to the text itself; only return the tag id.
+- Do not add the tag characters to the text itself; only return the category id.
 
 Return ONLY valid JSON with this shape:
-{"chunks":[{"original":"...","translated":"...","tag":"<tag id>"}]}`;
+{"chunks":[{"original":"...","translated":"...","category":"<category id>","topPercent":<0-100>}]}`;
 }
 
 export async function extractPage(opts: {
