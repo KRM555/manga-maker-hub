@@ -109,11 +109,27 @@ export async function extractPage(opts: {
     "";
 
   const cleaned = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  let parsed: { chunks?: ExtractedChunk[] };
+  let parsed: {
+    chunks?: {
+      original?: string;
+      translated?: string;
+      category?: string;
+      tag?: string;
+      topPercent?: number;
+    }[];
+  };
   try {
     parsed = JSON.parse(cleaned);
   } catch {
     throw new Error("Gemini returned an unexpected response format");
   }
-  return Array.isArray(parsed.chunks) ? parsed.chunks : [];
+  return (Array.isArray(parsed.chunks) ? parsed.chunks : []).map((c) => ({
+    original: c.original ?? "",
+    translated: c.translated ?? "",
+    tag: c.category ?? c.tag ?? "",
+    topPercent:
+      typeof c.topPercent === "number" && Number.isFinite(c.topPercent)
+        ? Math.min(100, Math.max(0, c.topPercent))
+        : undefined,
+  }));
 }
