@@ -64,6 +64,9 @@ const translations = {
     analyze: "Analyze and Extract Texts",
     filesReady: "file(s) ready",
     clearFiles: "Clear",
+    paragraph: "Paragraph",
+    addMore: "Add more",
+    removeImage: "Remove image",
   },
   ar: {
     appName: "استوديو ترجمة المانهوا",
@@ -116,6 +119,9 @@ const translations = {
     analyze: "تحليل واستخراج النصوص",
     filesReady: "ملف جاهز",
     clearFiles: "مسح",
+    paragraph: "فقرة",
+    addMore: "إضافة المزيد",
+    removeImage: "إزالة الصورة",
   },
 } as const;
 
