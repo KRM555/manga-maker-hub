@@ -50,7 +50,7 @@ export function UploadSection() {
   const [extractSfx, setExtractSfx] = useState(true);
   const [detectVertical, setDetectVertical] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
-  const previewMap = useRef<Map<string, string>>(new Map());
+  const [previewUrls, setPreviewUrls] = useState<Map<string, string>>(new Map());
   const {
     apiKey,
     tags,
@@ -63,30 +63,31 @@ export function UploadSection() {
     newUid,
   } = useStudio();
 
-  const isImage = (file: File) => {
-    const result = IMAGE_EXT.some((ext) => file.name.toLowerCase().endsWith(ext));
-    console.log("isImage check:", file.name, result, IMAGE_EXT);
-    return result;
-  };
+  const isImage = (file: File) =>
+    IMAGE_EXT.some((ext) => file.name.toLowerCase().endsWith(ext));
 
   useEffect(() => {
-    const current = previewMap.current;
-    const activeNames = new Set<string>();
+    setPreviewUrls((prev) => {
+      const next = new Map(prev);
+      const activeNames = new Set<string>();
 
-    files.forEach((file) => {
-      if (isImage(file)) {
-        activeNames.add(file.name);
-        if (!current.has(file.name)) {
-          current.set(file.name, URL.createObjectURL(file));
+      files.forEach((file) => {
+        if (isImage(file)) {
+          activeNames.add(file.name);
+          if (!next.has(file.name)) {
+            next.set(file.name, URL.createObjectURL(file));
+          }
         }
-      }
-    });
+      });
 
-    current.forEach((url, name) => {
-      if (!activeNames.has(name)) {
-        URL.revokeObjectURL(url);
-        current.delete(name);
-      }
+      next.forEach((url, name) => {
+        if (!activeNames.has(name)) {
+          URL.revokeObjectURL(url);
+          next.delete(name);
+        }
+      });
+
+      return next;
     });
   }, [files]);
 
