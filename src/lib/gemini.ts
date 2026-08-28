@@ -1,7 +1,7 @@
 import type { DictEntry, TagDef } from "@/lib/studio";
 
-const ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+const MODEL = "gemini-2.5-flash";
+const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 export interface ExtractedChunk {
   original: string;
@@ -10,15 +10,39 @@ export interface ExtractedChunk {
   topPercent?: number | undefined;
 }
 
+const EXT_TO_MIME: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".bmp": "image/bmp",
+};
+
+function detectMime(file: File): string {
+  const ext = Object.entries(EXT_TO_MIME).find(([ext]) =>
+    file.name.toLowerCase().endsWith(ext),
+  );
+  if (ext) return ext[1];
+  if (file.type && file.type.startsWith("image/")) return file.type;
+  return "image/png";
+}
+
 export function fileToBase64(file: File): Promise<{ mimeType: string; data: string }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
     reader.onload = () => {
-      const result = String(reader.result);
-      const meta = result.split(",")[0] ?? "";
-      const data = result.split(",")[1] ?? "";
-      const mimeType = meta.slice(5).split(";")[0] || file.type || "image/png";
+      const result = String(reader.result ?? "");
+      const commaIdx = result.indexOf(",");
+      const data = commaIdx >= 0 ? result.slice(commaIdx + 1) : result;
+
+      if (!data) {
+        reject(new Error(`No base64 data extracted from: ${file.name}`));
+        return;
+      }
+
+      const mimeType = detectMime(file);
       resolve({ mimeType, data });
     };
     reader.readAsDataURL(file);
@@ -67,6 +91,18 @@ Return ONLY valid JSON with this shape:
 {"chunks":[{"original":"...","translated":"...","category":"<category id>","topPercent":<0-100>}]}`;
 }
 
+export class GeminiError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+    readonly isAuthError?: boolean,
+    readonly isQuotaError?: boolean,
+  ) {
+    super(message);
+    this.name = "GeminiError";
+  }
+}
+
 export async function extractPage(opts: {
   apiKey: string;
   file: File;
@@ -78,37 +114,89 @@ export async function extractPage(opts: {
 }): Promise<ExtractedChunk[]> {
   const { mimeType, data } = await fileToBase64(opts.file);
 
-  const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(opts.apiKey)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: buildPrompt(opts) }, { inlineData: { mimeType, data } }],
-        },
-      ],
-      generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
-    }),
-  });
+  console.log(`[Gemini] Sending ${opts.file.name} (${mimeType}, ${data.length} base64 chars) to ${MODEL}`);
+
+  const requestBody = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: buildPrompt(opts) },
+          { inlineData: { mimeType, data } },
+        ],
+      },
+    ],
+    generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
+  };
+
+  let res: Response;
+  try {
+    res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(opts.apiKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+  } catch (networkErr) {
+    throw new GeminiError(
+      `Network error contacting Gemini: ${networkErr instanceof Error ? networkErr.message : "unknown"}`,
+    );
+  }
 
   if (!res.ok) {
     let message = `Gemini request failed (${res.status})`;
+    let isAuth = false;
+    let isQuota = false;
     try {
       const err = await res.json();
-      message = err?.error?.message ?? message;
+      const apiMsg = err?.error?.message ?? "";
+      if (apiMsg) message = `${message}: ${apiMsg}`;
+      if (res.status === 400 && /api key/i.test(apiMsg)) isAuth = true;
+      if (res.status === 401 || res.status === 403) isAuth = true;
+      if (res.status === 429 || /quota|rate/i.test(apiMsg)) isQuota = true;
     } catch {
-      /* ignore */
+      /* response body wasn't JSON — keep the status-only message */
     }
-    throw new Error(message);
+    throw new GeminiError(message, res.status, isAuth, isQuota);
   }
 
   const json = await res.json();
-  const text: string =
-    json?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ??
-    "";
 
-  const cleaned = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  console.log("[Gemini] Raw response JSON:", JSON.stringify(json).slice(0, 2000));
+
+  const candidate = json?.candidates?.[0];
+  if (!candidate) {
+    const blockReason = json?.promptFeedback?.blockReason;
+    throw new GeminiError(
+      blockReason
+        ? `Gemini blocked the request: ${blockReason}`
+        : "Gemini returned no candidates (the model produced no output). Check your API key and quota.",
+    );
+  }
+
+  const finishReason = candidate.finishReason;
+  if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+    console.warn(`[Gemini] Non-normal finishReason: ${finishReason}`);
+  }
+
+  const text: string =
+    candidate.content?.parts
+      ?.map((p: { text?: string }) => p.text ?? "")
+      .join("") ?? "";
+
+  console.log(`[Gemini] Extracted text length: ${text.length} chars`);
+
+  if (!text.trim()) {
+    throw new GeminiError(
+      `Gemini returned an empty response for "${opts.file.name}". The model may have been unable to read the image.`,
+    );
+  }
+
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
   let parsed: {
     chunks?: {
       original?: string;
@@ -121,9 +209,26 @@ export async function extractPage(opts: {
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Gemini returned an unexpected response format");
+    console.error("[Gemini] Failed to parse cleaned text:", cleaned.slice(0, 500));
+    throw new GeminiError(
+      `Gemini returned an unparseable response for "${opts.file.name}". Check the console for details.`,
+    );
   }
-  return (Array.isArray(parsed.chunks) ? parsed.chunks : []).map((c) => ({
+
+  if (!Array.isArray(parsed.chunks)) {
+    console.error("[Gemini] Response had no 'chunks' array:", JSON.stringify(parsed).slice(0, 500));
+    throw new GeminiError(
+      `Gemini response for "${opts.file.name}" was valid JSON but contained no "chunks" array.`,
+    );
+  }
+
+  if (parsed.chunks.length === 0) {
+    throw new GeminiError(
+      `Gemini found no text blocks in "${opts.file.name}". The image may not contain readable text, or the model could not process it.`,
+    );
+  }
+
+  return parsed.chunks.map((c) => ({
     original: c.original ?? "",
     translated: c.translated ?? "",
     tag: c.category ?? c.tag ?? "",

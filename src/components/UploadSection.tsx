@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  UploadCloud,
-  FileImage,
-  FileArchive,
-  Sparkles,
-  X,
-  Plus,
-} from "lucide-react";
+import { CloudUpload as UploadCloud, FileImage, FileArchive, Sparkles, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -27,9 +20,9 @@ import {
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useStudio } from "@/lib/studio";
-import { extractPage } from "@/lib/gemini";
+import { extractPage, GeminiError } from "@/lib/gemini";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader as Loader2 } from "lucide-react";
 
 const ACCEPTED = [".zip", ".png", ".jpg", ".jpeg", ".webp"];
 
@@ -50,7 +43,7 @@ export function UploadSection() {
   const [extractSfx, setExtractSfx] = useState(true);
   const [detectVertical, setDetectVertical] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<Map<string, string>>(new Map());
+  const [previewUrls, setPreviewUrls] = useState<Map<number, string>>(new Map());
   const {
     apiKey,
     tags,
@@ -68,32 +61,30 @@ export function UploadSection() {
 
   useEffect(() => {
     setPreviewUrls((prev) => {
-      const next = new Map(prev);
-      const activeNames = new Set<string>();
+      const next = new Map<number, string>();
+      const activeIndices = new Set<number>();
 
-      files.forEach((file) => {
+      files.forEach((file, index) => {
         if (isImage(file)) {
-          activeNames.add(file.name);
-          if (!next.has(file.name)) {
-            next.set(file.name, URL.createObjectURL(file));
+          activeIndices.add(index);
+          const existing = prev.get(index);
+          if (existing) {
+            next.set(index, existing);
+          } else {
+            next.set(index, URL.createObjectURL(file));
           }
         }
       });
 
-      next.forEach((url, name) => {
-        if (!activeNames.has(name)) {
+      prev.forEach((url, index) => {
+        if (!activeIndices.has(index)) {
           URL.revokeObjectURL(url);
-          next.delete(name);
         }
       });
 
       return next;
     });
   }, [files]);
-
-  useEffect(() => {
-    console.log("previewUrls changed:", Array.from(previewUrls.entries()));
-  }, [previewUrls]);
 
   const langLabel: Record<string, string> = {
     ar: "Arabic",
@@ -156,10 +147,30 @@ export function UploadSection() {
         description: `${results.reduce((n, p) => n + p.paragraphs.length, 0)} paragraph(s) across ${results.length} page(s).`,
       });
     } catch (err) {
-      toast.error("Extraction failed", {
-        id: toastId,
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
+      if (err instanceof GeminiError) {
+        if (err.isAuthError) {
+          toast.error("Invalid or missing Gemini API key", {
+            id: toastId,
+            description: err.message,
+          });
+        } else if (err.isQuotaError) {
+          toast.error("Gemini API quota exceeded", {
+            id: toastId,
+            description: "Your API key has hit its rate limit. Try again later or use a different key.",
+          });
+        } else {
+          toast.error("Extraction failed", {
+            id: toastId,
+            description: err.message,
+          });
+        }
+      } else {
+        toast.error("Extraction failed", {
+          id: toastId,
+          description: err instanceof Error ? err.message : "Unknown error",
+        });
+      }
+      console.error("[Analyze] Extraction error:", err);
     } finally {
       setIsRunning(false);
     }
@@ -247,9 +258,8 @@ export function UploadSection() {
                   {files.map((file, index) => {
                     const isImg = isImage(file);
                     const preview = isImg
-                      ? previewUrls.get(file.name)
+                      ? previewUrls.get(index)
                       : null;
-                    console.log("render preview:", file.name, isImg, preview);
                     return (
                       <div
                         key={`${file.name}-${index}`}
@@ -259,11 +269,18 @@ export function UploadSection() {
                           <img
                             src={preview}
                             alt={file.name}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain bg-black"
+                            onError={(e) => {
+                              console.error(`Preview failed to load: ${file.name}`, e);
+                            }}
                           />
                         ) : (
                           <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-2 text-muted-foreground">
-                            <FileArchive className="size-8" />
+                            {isImg ? (
+                              <FileImage className="size-8" />
+                            ) : (
+                              <FileArchive className="size-8" />
+                            )}
                             <span className="line-clamp-2 text-xs font-medium">
                               {file.name}
                             </span>
@@ -288,6 +305,10 @@ export function UploadSection() {
 
                   <button
                     type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      inputRef.current?.click();
+                    }}
                     className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary"
                   >
                     <Plus className="size-6" />

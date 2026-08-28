@@ -210,7 +210,7 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
             </Button>
           </div>
           <div className="relative max-h-[70vh] overflow-auto rounded-lg bg-muted/40">
-            <img src={page.url} alt={page.name} className="w-full" />
+            <img src={page.url} alt={page.name} className="h-auto w-full object-contain" onError={(e) => console.error(`Workspace image failed: ${page.name}`, e)} />
             {showOverlays && (
               <div className="pointer-events-none absolute inset-0">
                 {page.paragraphs.map((par, i) => (
