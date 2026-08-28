@@ -50,6 +50,7 @@ export function UploadSection() {
   const [extractSfx, setExtractSfx] = useState(true);
   const [detectVertical, setDetectVertical] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
+  const previewMap = useRef<Map<string, string>>(new Map());
   const {
     apiKey,
     tags,
@@ -61,6 +62,30 @@ export function UploadSection() {
     setTargetLang,
     newUid,
   } = useStudio();
+
+  const isImage = (file: File) =>
+    IMAGE_EXT.some((ext) => file.name.toLowerCase().endsWith(ext));
+
+  useEffect(() => {
+    const current = previewMap.current;
+    const activeNames = new Set<string>();
+
+    files.forEach((file) => {
+      if (isImage(file)) {
+        activeNames.add(file.name);
+        if (!current.has(file.name)) {
+          current.set(file.name, URL.createObjectURL(file));
+        }
+      }
+    });
+
+    current.forEach((url, name) => {
+      if (!activeNames.has(name)) {
+        URL.revokeObjectURL(url);
+        current.delete(name);
+      }
+    });
+  }, [files]);
 
   const langLabel: Record<string, string> = {
     ar: "Arabic",
