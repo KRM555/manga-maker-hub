@@ -312,7 +312,8 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
                 />
               </CardContent>
             </Card>
-          ))}
+          </div>
+        ))}
         </div>
       </div>
     </section>
