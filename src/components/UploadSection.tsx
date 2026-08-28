@@ -63,8 +63,11 @@ export function UploadSection() {
     newUid,
   } = useStudio();
 
-  const isImage = (file: File) =>
-    IMAGE_EXT.some((ext) => file.name.toLowerCase().endsWith(ext));
+  const isImage = (file: File) => {
+    const result = IMAGE_EXT.some((ext) => file.name.toLowerCase().endsWith(ext));
+    console.log("isImage check:", file.name, result, IMAGE_EXT);
+    return result;
+  };
 
   useEffect(() => {
     const current = previewMap.current;
