@@ -34,12 +34,36 @@ import { DictionaryDialog } from "@/components/dialogs/DictionaryDialog";
 import { TagsDialog } from "@/components/dialogs/TagsDialog";
 
 export function Header() {
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, setLang, dir } = useI18n();
   const { theme, toggleTheme } = useTheme();
   const { apiKey, setApiKey, setPages, setView, setActivePage } = useStudio();
   const [authOpen, setAuthOpen] = useState(false);
   const [dictOpen, setDictOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [apiKeyDraft, setApiKeyDraft] = useState(apiKey);
+
+  useEffect(() => {
+    if (sheetOpen) setApiKeyDraft(apiKey);
+  }, [sheetOpen, apiKey]);
+
+  const saveApiKey = () => {
+    const value = apiKeyDraft.trim();
+    setApiKey(value); // persists to localStorage via studio context
+    try {
+      localStorage.setItem("mts.apiKey", JSON.stringify(value));
+    } catch {
+      /* ignore */
+    }
+    toast.success(t("apiKeySaved"), { description: t("apiKeySavedDesc") });
+  };
+
+  const startNewProject = () => {
+    setPages([]);
+    setActivePage(0);
+    setView("upload");
+    setSheetOpen(false);
+  };
 
   return (
     <TooltipProvider delayDuration={200}>
