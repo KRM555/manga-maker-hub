@@ -119,6 +119,9 @@ const translations = {
     analyze: "تحليل واستخراج النصوص",
     filesReady: "ملف جاهز",
     clearFiles: "مسح",
+    paragraph: "فقرة",
+    addMore: "إضافة المزيد",
+    removeImage: "إزالة الصورة",
   },
 } as const;
 
