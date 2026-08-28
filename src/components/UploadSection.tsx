@@ -104,6 +104,7 @@ export function UploadSection() {
             original: c.original ?? "",
             translated: c.translated ?? "",
             tagId: tags.find((t) => t.id === c.tag)?.id ?? tags[0]?.id ?? "dialogue",
+            topPercent: c.topPercent,
           })),
         });
       }

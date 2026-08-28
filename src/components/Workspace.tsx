@@ -61,7 +61,7 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
   const page = pages[activePage];
   if (!page) return null;
 
-  const wrap = (text: string, tagId: string) => {
+  const formatTextWithRules = (text: string, tagId: string) => {
     const tag = tags.find((t) => t.id === tagId);
     return tag ? `${tag.prefix}${text}${tag.suffix}` : text;
   };
@@ -71,7 +71,7 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
     p.paragraphs
       .map((par, i) =>
         field === "translated"
-          ? `${i + 1}. ${wrap(par.translated, par.tagId)}`
+          ? `${i + 1}. ${formatTextWithRules(par.translated, par.tagId)}`
           : `${i + 1}. ${par.original}`,
       )
       .join("\n");
@@ -211,11 +211,14 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
           <div className="relative max-h-[70vh] overflow-auto rounded-lg bg-muted/40">
             <img src={page.url} alt={page.name} className="w-full" />
             {showOverlays && (
-              <div className="pointer-events-none absolute inset-0 flex flex-col gap-2 p-3">
+              <div className="pointer-events-none absolute inset-0">
                 {page.paragraphs.map((par, i) => (
                   <span
                     key={par.id}
-                    className="w-fit rounded-md bg-primary/85 px-2 py-1 text-xs font-medium text-primary-foreground shadow"
+                    style={{
+                      top: `${par.topPercent ?? (i / Math.max(1, page.paragraphs.length)) * 100}%`,
+                    }}
+                    className="absolute left-3 w-fit max-w-[45%] -translate-y-1/2 truncate rounded-md bg-primary/85 px-2 py-1 text-xs font-medium text-primary-foreground shadow"
                   >
                     #{i + 1} {par.translated.slice(0, 40)}
                   </span>
@@ -274,7 +277,7 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
                     size="sm"
                     className="ms-auto gap-1.5"
                     onClick={() => {
-                      void navigator.clipboard.writeText(wrap(par.translated, par.tagId));
+                      void navigator.clipboard.writeText(formatTextWithRules(par.translated, par.tagId));
                       toast.success("Paragraph copied");
                     }}
                   >
