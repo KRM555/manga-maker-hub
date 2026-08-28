@@ -277,7 +277,7 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
                     size="sm"
                     className="ms-auto gap-1.5"
                     onClick={() => {
-                      void navigator.clipboard.writeText(wrap(par.translated, par.tagId));
+                      void navigator.clipboard.writeText(formatTextWithRules(par.translated, par.tagId));
                       toast.success("Paragraph copied");
                     }}
                   >
