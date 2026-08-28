@@ -245,6 +245,7 @@ export function UploadSection() {
                     const preview = isImg
                       ? previewUrls.get(file.name)
                       : null;
+                    console.log("render preview:", file.name, isImg, preview);
                     return (
                       <div
                         key={`${file.name}-${index}`}
