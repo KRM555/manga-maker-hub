@@ -1,4 +1,5 @@
-import { Languages, Moon, Sun, BookMarked, Tags, KeyRound, FolderPlus, LogIn, PanelsTopLeft, ExternalLink } from "lucide-react";
+import { Languages, Moon, Sun, BookMarked, Tags, KeyRound, FolderPlus, LogIn, ExternalLink } from "lucide-react";
+import logoAsset from "@/assets/logo.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
