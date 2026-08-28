@@ -1,4 +1,5 @@
-import { Languages, Moon, Sun, BookMarked, Tags, KeyRound, FolderPlus, LogIn, PanelsTopLeft, ExternalLink } from "lucide-react";
+import { Languages, Moon, Sun, BookMarked, Tags, KeyRound, FolderPlus, LogIn, ExternalLink } from "lucide-react";
+import logoAsset from "@/assets/logo.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,9 +36,11 @@ export function Header() {
         <div className="mx-auto flex min-h-16 h-auto max-w-7xl flex-nowrap items-center gap-2 overflow-hidden px-4 py-2.5 sm:gap-3 sm:px-6">
           {/* Logo */}
           <div className="flex shrink-0 items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <PanelsTopLeft className="size-5" />
-            </div>
+            <img
+              src={logoAsset.url}
+              alt={t("appName")}
+              className="size-10 shrink-0 rounded-xl object-cover"
+            />
             <div className="hidden leading-tight sm:block">
               <p className="text-sm font-bold tracking-tight">{t("appName")}</p>
               <p className="hidden whitespace-normal text-[11px] leading-snug text-muted-foreground md:block max-w-[180px]">
