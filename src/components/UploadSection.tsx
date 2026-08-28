@@ -243,7 +243,7 @@ export function UploadSection() {
                   {files.map((file, index) => {
                     const isImg = isImage(file);
                     const preview = isImg
-                      ? previewMap.current.get(file.name)
+                      ? previewUrls.get(file.name)
                       : null;
                     return (
                       <div
