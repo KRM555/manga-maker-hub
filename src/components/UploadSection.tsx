@@ -139,13 +139,22 @@ export function UploadSection() {
           })),
         });
       }
+      const totalParagraphs = results.reduce((n, p) => n + p.paragraphs.length, 0);
       setPages(results);
       setActivePage(0);
       setView("workspace");
-      toast.success("Extraction complete", {
-        id: toastId,
-        description: `${results.reduce((n, p) => n + p.paragraphs.length, 0)} paragraph(s) across ${results.length} page(s).`,
-      });
+      if (totalParagraphs === 0) {
+        toast.warning("No text found in the uploaded image(s)", {
+          id: toastId,
+          description:
+            "The AI couldn't detect any readable text. The images may be blank, low quality, or contain no text. You can still view the pages and add text manually.",
+        });
+      } else {
+        toast.success("Extraction complete", {
+          id: toastId,
+          description: `${totalParagraphs} paragraph(s) across ${results.length} page(s).`,
+        });
+      }
     } catch (err) {
       if (err instanceof GeminiError) {
         if (err.isAuthError) {

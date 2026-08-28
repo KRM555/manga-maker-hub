@@ -63,7 +63,9 @@ function buildPrompt(opts: {
     ? opts.dictionary.map((d) => `- "${d.term}" => "${d.replacement}"`).join("\n")
     : "(none)";
 
-  return `Analyze the provided manga/webtoon image top-to-bottom:
+  return `You are an OCR and translation assistant for manga/webtoon pages.
+
+Analyze the provided manga/webtoon image top-to-bottom:
 
 1. Extract all original text blocks in reading order
    (right-to-left for Japanese manga, top-to-bottom for Korean webtoons).
@@ -86,9 +88,11 @@ Rules:
 - ${opts.detectVertical ? "Detect and correctly order vertical text." : "Assume horizontal text."}
 - Keep the "original" field as the raw source text exactly as it appears.
 - Do not add the tag characters to the text itself; only return the category id.
+- If no text is found in the image, return {"chunks": []}.
 
-Return ONLY valid JSON with this shape:
-{"chunks":[{"original":"...","translated":"...","category":"<category id>","topPercent":<0-100>}]}`;
+You MUST respond with ONLY a valid JSON object using this exact schema (no markdown, no code fences, no commentary):
+{"chunks":[{"original":"<raw source text>","translated":"<translated text>","category":"<category id>","topPercent":<0-100>}]}
+`;
 }
 
 export class GeminiError extends Error {
@@ -101,6 +105,64 @@ export class GeminiError extends Error {
     super(message);
     this.name = "GeminiError";
   }
+}
+
+interface RawChunk {
+  original?: string;
+  originalText?: string;
+  translated?: string;
+  translatedText?: string;
+  category?: string;
+  tag?: string;
+  topPercent?: number;
+}
+
+function stripCodeFences(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
+function extractChunkArray(parsed: unknown): RawChunk[] | null {
+  if (Array.isArray(parsed)) {
+    return parsed as RawChunk[];
+  }
+
+  if (parsed && typeof parsed === "object") {
+    const obj = parsed as Record<string, unknown>;
+    const arrayKeys = [
+      "chunks",
+      "paragraphs",
+      "blocks",
+      "text_blocks",
+      "textBlocks",
+      "results",
+      "items",
+      "data",
+    ];
+    for (const key of arrayKeys) {
+      const val = obj[key];
+      if (Array.isArray(val)) {
+        return val as RawChunk[];
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeChunk(c: RawChunk): ExtractedChunk {
+  return {
+    original: c.original ?? c.originalText ?? "",
+    translated: c.translated ?? c.translatedText ?? "",
+    tag: c.category ?? c.tag ?? "",
+    topPercent:
+      typeof c.topPercent === "number" && Number.isFinite(c.topPercent)
+        ? Math.min(100, Math.max(0, c.topPercent))
+        : undefined,
+  };
 }
 
 export async function extractPage(opts: {
@@ -186,26 +248,13 @@ export async function extractPage(opts: {
   console.log(`[Gemini] Extracted text length: ${text.length} chars`);
 
   if (!text.trim()) {
-    throw new GeminiError(
-      `Gemini returned an empty response for "${opts.file.name}". The model may have been unable to read the image.`,
-    );
+    console.warn(`[Gemini] Empty model output for "${opts.file.name}" — returning empty array`);
+    return [];
   }
 
-  const cleaned = text
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
+  const cleaned = stripCodeFences(text);
 
-  let parsed: {
-    chunks?: {
-      original?: string;
-      translated?: string;
-      category?: string;
-      tag?: string;
-      topPercent?: number;
-    }[];
-  };
+  let parsed: unknown;
   try {
     parsed = JSON.parse(cleaned);
   } catch {
@@ -215,26 +264,21 @@ export async function extractPage(opts: {
     );
   }
 
-  if (!Array.isArray(parsed.chunks)) {
-    console.error("[Gemini] Response had no 'chunks' array:", JSON.stringify(parsed).slice(0, 500));
-    throw new GeminiError(
-      `Gemini response for "${opts.file.name}" was valid JSON but contained no "chunks" array.`,
+  const rawChunks = extractChunkArray(parsed);
+
+  if (!rawChunks) {
+    console.error(
+      "[Gemini] Response had no recognizable chunks array:",
+      JSON.stringify(parsed).slice(0, 500),
     );
+    console.warn(`[Gemini] No chunks array found for "${opts.file.name}" — returning empty array`);
+    return [];
   }
 
-  if (parsed.chunks.length === 0) {
-    throw new GeminiError(
-      `Gemini found no text blocks in "${opts.file.name}". The image may not contain readable text, or the model could not process it.`,
-    );
+  if (rawChunks.length === 0) {
+    console.warn(`[Gemini] Model returned empty chunks array for "${opts.file.name}"`);
+    return [];
   }
 
-  return parsed.chunks.map((c) => ({
-    original: c.original ?? "",
-    translated: c.translated ?? "",
-    tag: c.category ?? c.tag ?? "",
-    topPercent:
-      typeof c.topPercent === "number" && Number.isFinite(c.topPercent)
-        ? Math.min(100, Math.max(0, c.topPercent))
-        : undefined,
-  }));
+  return rawChunks.map(normalizeChunk);
 }
