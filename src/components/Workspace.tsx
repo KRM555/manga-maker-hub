@@ -235,55 +235,64 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
             </p>
           )}
           {page.paragraphs.map((par, i) => (
-            <Card key={par.id}>
-              <CardContent className="flex flex-col gap-3 p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">Paragraph {i + 1}</Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    aria-label="Move up"
-                    onClick={() => moveParagraph(page.id, i, -1)}
-                  >
-                    <ArrowUp className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    aria-label="Move down"
-                    onClick={() => moveParagraph(page.id, i, 1)}
-                  >
-                    <ArrowDown className="size-4" />
-                  </Button>
-                  <Select
-                    value={par.tagId}
-                    onValueChange={(v) => updateParagraph(page.id, par.id, { tagId: v })}
-                  >
-                    <SelectTrigger className="h-8 w-40">
-                      <SelectValue placeholder="Tag" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tags.map((tag) => (
-                        <SelectItem key={tag.id} value={tag.id}>
-                          {tag.name} {tag.prefix}…{tag.suffix}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="ms-auto gap-1.5"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(formatTextWithRules(par.translated, par.tagId));
-                      toast.success("Paragraph copied");
-                    }}
-                  >
-                    <Copy className="size-4" /> Copy Paragraph
-                  </Button>
-                </div>
+            <div key={par.id} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 px-1">
+                <span className="shrink-0 text-xs font-bold text-primary">
+                  #{i + 1}
+                </span>
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {t("paragraph")} {i + 1}
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <Card>
+                <CardContent className="flex flex-col gap-3 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label="Move up"
+                      onClick={() => moveParagraph(page.id, i, -1)}
+                    >
+                      <ArrowUp className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label="Move down"
+                      onClick={() => moveParagraph(page.id, i, 1)}
+                    >
+                      <ArrowDown className="size-4" />
+                    </Button>
+                    <Select
+                      value={par.tagId}
+                      onValueChange={(v) => updateParagraph(page.id, par.id, { tagId: v })}
+                    >
+                      <SelectTrigger className="h-8 w-40">
+                        <SelectValue placeholder="Tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tags.map((tag) => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            {tag.name} {tag.prefix}…{tag.suffix}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ms-auto gap-1.5"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(formatTextWithRules(par.translated, par.tagId));
+                        toast.success("Paragraph copied");
+                      }}
+                    >
+                      <Copy className="size-4" /> Copy Paragraph
+                    </Button>
+                  </div>
 
                 <Textarea
                   value={par.original}
