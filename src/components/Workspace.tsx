@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowDown,
@@ -9,6 +9,7 @@ import {
   EyeOff,
   RefreshCw,
   Replace,
+  ScrollText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +28,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useI18n } from "@/lib/i18n";
 import { useStudio, type StudioPage } from "@/lib/studio";
+import {
+  buildLegend,
+  formatFullScript,
+  formatPageScript,
+} from "@/lib/script-format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -58,8 +70,19 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
   const [search, setSearch] = useState("");
   const [replace, setReplace] = useState("");
   const [showOverlays, setShowOverlays] = useState(true);
+  const [scriptScope, setScriptScope] = useState<"page" | "all">("page");
 
   const page = pages[activePage];
+  const pageScript = useMemo(
+    () => (page ? formatPageScript(page, activePage + 1, tags, "translated") : ""),
+    [page, activePage, tags],
+  );
+  const fullScript = useMemo(
+    () => formatFullScript(pages, tags, "translated"),
+    [pages, tags],
+  );
+  const legend = useMemo(() => buildLegend(tags), [tags]);
+
   if (!page) return null;
 
   const formatTextWithRules = (text: string, tagId: string) => {
@@ -88,6 +111,23 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
     );
     toast.success("Export ready");
   };
+
+  const exportScript = (scope: "page" | "all") => {
+    const content = scope === "page" ? pageScript : fullScript;
+    download(
+      `script-${scope === "page" ? `page-${activePage + 1}` : "all-pages"}.txt`,
+      content,
+    );
+    toast.success("Script exported");
+  };
+
+  const copyScript = (scope: "page" | "all") => {
+    const content = scope === "page" ? pageScript : fullScript;
+    void navigator.clipboard.writeText(content);
+    toast.success(scope === "page" ? "Page script copied" : "Full script copied");
+  };
+
+  const activeScript = scriptScope === "page" ? pageScript : fullScript;
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6">
@@ -133,6 +173,22 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => exportField("original", "all")}>
                   All pages
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <ScrollText className="size-4" /> Export Script
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportScript("page")}>
+                  Current page script
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportScript("all")}>
+                  Full script (all pages)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -229,93 +285,162 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
           </div>
         </div>
 
-        <div className="flex max-h-[80vh] flex-col gap-3 overflow-y-auto pe-1">
-          {page.paragraphs.length === 0 && (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No text was extracted from this page.
-            </p>
-          )}
-          {page.paragraphs.map((par, i) => (
-            <div key={par.id} className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 px-1">
-                <span className="shrink-0 text-xs font-bold text-primary">
-                  #{i + 1}
-                </span>
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {t("paragraph")} {i + 1}
-                </span>
-                <div className="h-px flex-1 bg-border" />
+        <Tabs defaultValue="editor" className="flex max-h-[80vh] flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <TabsList>
+              <TabsTrigger value="editor">Paragraphs</TabsTrigger>
+              <TabsTrigger value="script">Script Preview</TabsTrigger>
+            </TabsList>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                {tags
+                  .filter((tag) => tag.prefix || tag.suffix)
+                  .map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="rounded-md border bg-muted/60 px-1.5 py-0.5 font-mono"
+                    >
+                      {tag.prefix}
+                      {tag.suffix}: {tag.name}
+                    </span>
+                  ))}
               </div>
-              <Card>
-                <CardContent className="flex flex-col gap-3 p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      aria-label="Move up"
-                      onClick={() => moveParagraph(page.id, i, -1)}
-                    >
-                      <ArrowUp className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      aria-label="Move down"
-                      onClick={() => moveParagraph(page.id, i, 1)}
-                    >
-                      <ArrowDown className="size-4" />
-                    </Button>
-                    <Select
-                      value={par.tagId}
-                      onValueChange={(v) => updateParagraph(page.id, par.id, { tagId: v })}
-                    >
-                      <SelectTrigger className="h-8 w-40">
-                        <SelectValue placeholder="Tag" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tags.map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id}>
-                            {tag.name} {tag.prefix}…{tag.suffix}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="ms-auto gap-1.5"
-                      onClick={() => {
-                        void navigator.clipboard.writeText(formatTextWithRules(par.translated, par.tagId));
-                        toast.success("Paragraph copied");
-                      }}
-                    >
-                      <Copy className="size-4" /> Copy Paragraph
-                    </Button>
-                  </div>
-
-                <Textarea
-                  value={par.original}
-                  onChange={(e) =>
-                    updateParagraph(page.id, par.id, { original: e.target.value })
-                  }
-                  placeholder="Original text"
-                  className="min-h-20 text-sm"
-                />
-                <Textarea
-                  value={par.translated}
-                  onChange={(e) =>
-                    updateParagraph(page.id, par.id, { translated: e.target.value })
-                  }
-                  placeholder="Translated text"
-                  className="min-h-20 text-sm"
-                />
-              </CardContent>
-            </Card>
+            )}
           </div>
-        ))}
-        </div>
+
+          {/* Editor tab */}
+          <TabsContent value="editor" className="mt-0 overflow-y-auto pe-1">
+            {page.paragraphs.length === 0 && (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                No text was extracted from this page.
+              </p>
+            )}
+            {page.paragraphs.map((par, i) => (
+              <div key={par.id} className="mb-3 flex flex-col gap-2">
+                <div className="flex items-center gap-2 px-1">
+                  <span className="shrink-0 text-xs font-bold text-primary">
+                    #{i + 1}
+                  </span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {t("paragraph")} {i + 1}
+                  </span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <Card>
+                  <CardContent className="flex flex-col gap-3 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Move up"
+                        onClick={() => moveParagraph(page.id, i, -1)}
+                      >
+                        <ArrowUp className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Move down"
+                        onClick={() => moveParagraph(page.id, i, 1)}
+                      >
+                        <ArrowDown className="size-4" />
+                      </Button>
+                      <Select
+                        value={par.tagId}
+                        onValueChange={(v) => updateParagraph(page.id, par.id, { tagId: v })}
+                      >
+                        <SelectTrigger className="h-8 w-40">
+                          <SelectValue placeholder="Tag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tags.map((tag) => (
+                            <SelectItem key={tag.id} value={tag.id}>
+                              {tag.name} {tag.prefix}…{tag.suffix}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ms-auto gap-1.5"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(formatTextWithRules(par.translated, par.tagId));
+                          toast.success("Paragraph copied");
+                        }}
+                      >
+                        <Copy className="size-4" /> Copy Paragraph
+                      </Button>
+                    </div>
+
+                  <Textarea
+                    value={par.original}
+                    onChange={(e) =>
+                      updateParagraph(page.id, par.id, { original: e.target.value })
+                    }
+                    placeholder="Original text"
+                    className="min-h-20 text-sm"
+                  />
+                  <Textarea
+                    value={par.translated}
+                    onChange={(e) =>
+                      updateParagraph(page.id, par.id, { translated: e.target.value })
+                    }
+                    placeholder="Translated text"
+                    className="min-h-20 text-sm"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+          </TabsContent>
+
+          {/* Script preview tab */}
+          <TabsContent value="script" className="mt-0 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={scriptScope}
+                onValueChange={(v) => setScriptScope(v as "page" | "all")}
+              >
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="page">This page</SelectItem>
+                  <SelectItem value="all">All pages</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => copyScript(scriptScope)}
+              >
+                <Copy className="size-4" /> Copy script
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => exportScript(scriptScope)}
+              >
+                <Download className="size-4" /> Download
+              </Button>
+            </div>
+
+            {legend && (
+              <pre className="whitespace-pre-wrap rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+                {legend.trim()}
+              </pre>
+            )}
+
+            <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/20 p-4 font-mono text-xs leading-relaxed">
+              {activeScript || "(empty)"}
+            </pre>
+          </TabsContent>
+        </Tabs>
       </div>
     </section>
   );

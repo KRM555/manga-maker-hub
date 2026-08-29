@@ -57,13 +57,21 @@ function buildPrompt(opts: {
   detectVertical: boolean;
 }) {
   const tagList = opts.tags
-    .map((t) => `${t.id} (${t.name}) (Prefix: ${t.prefix}, Suffix: ${t.suffix})`)
+    .map((t) => `${t.id} (${t.name}) (Symbol: ${t.prefix}${t.suffix})`)
+    .join("\n");
+  const legendLines = opts.tags
+    .filter((t) => t.prefix || t.suffix)
+    .map((t) => `${t.prefix}${t.suffix}: ${t.name}`)
     .join("\n");
   const dict = opts.dictionary.length
     ? opts.dictionary.map((d) => `- "${d.term}" => "${d.replacement}"`).join("\n")
     : "(none)";
 
   return `You are an OCR and translation assistant for manga/webtoon pages.
+
+The output script uses a fixed formatting layout. Each text block is prefixed with the
+symbol of its assigned category, like this:
+${legendLines}
 
 Analyze the provided manga/webtoon image top-to-bottom:
 
@@ -88,6 +96,7 @@ Rules:
 - ${opts.detectVertical ? "Detect and correctly order vertical text." : "Assume horizontal text."}
 - Keep the "original" field as the raw source text exactly as it appears.
 - Do not add the tag characters to the text itself; only return the category id.
+   The script formatter will add the symbol prefix automatically.
 - If no text is found in the image, return {"chunks": []}.
 
 You MUST respond with ONLY a valid JSON object using this exact schema (no markdown, no code fences, no commentary):
