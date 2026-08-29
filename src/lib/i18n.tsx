@@ -69,7 +69,7 @@ const translations = {
     removeImage: "Remove image",
   },
   ar: {
-    appName: "استوديو ترجمة المانهوا",
+    appName: "Manhwa Transtool Studio",
     appTagline: "مساحة عمل ذكية لفرق ترجمة المانجا والمانهوا",
     language: "اللغة",
     themeToggle: "تبديل المظهر",

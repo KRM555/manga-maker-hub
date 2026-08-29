@@ -77,7 +77,7 @@ export function Header() {
   return (
     <TooltipProvider delayDuration={200}>
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex min-h-16 h-auto max-w-7xl flex-nowrap items-center gap-2 overflow-hidden px-4 py-2.5 sm:gap-3 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl flex-nowrap items-center gap-2 overflow-hidden px-4 sm:gap-3 sm:px-6">
           {/* Hamburger menu / sidebar */}
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <Tooltip>
@@ -179,7 +179,7 @@ export function Header() {
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder={t("geminiApiKeyPlaceholder")}
                     aria-label={t("geminiApiKey")}
-                    className="h-9 w-full min-w-0 rounded-r-none ps-8 pe-3 text-xs"
+                    className="h-9 w-full min-w-0 rounded-e-none ps-8 pe-3 text-xs"
                   />
                 </div>
                 <a
@@ -187,7 +187,7 @@ export function Header() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t("tooltipGetApiKey")}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-r-md border border-l-0 border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-s-md border border-s-0 border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <ExternalLink className="size-4" />
                 </a>
