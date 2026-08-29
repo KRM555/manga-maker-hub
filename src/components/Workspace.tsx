@@ -179,31 +179,15 @@ export function Workspace({ onReanalyze }: { onReanalyze: () => void }) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <ScrollText className="size-4" /> Export Script
+                <Button size="sm" className="gap-1.5">
+                  <ScrollText className="size-4" /> Export Translated Text
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => exportScript("page")}>
-                  Current page script
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportScript("all")}>
-                  Full script (all pages)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" className="gap-1.5">
-                  <Download className="size-4" /> Export Translated Text
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportField("translated", "page")}>
                   Current page
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportField("translated", "all")}>
+                <DropdownMenuItem onClick={() => exportScript("all")}>
                   All pages
                 </DropdownMenuItem>
               </DropdownMenuContent>
