@@ -1,5 +1,4 @@
 import { Languages, Moon, Sun, BookMarked, Tags, KeyRound, FolderPlus, LogIn, ExternalLink, Menu, Save } from "lucide-react";
-import logoAsset from "@/assets/logo.jpg.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,7 +154,7 @@ export function Header() {
           {/* Logo */}
           <div className="flex shrink-0 items-center gap-2.5">
             <img
-              src={logoAsset.url}
+              src="/favicon.png"
               alt={t("appName")}
               className="size-10 shrink-0 rounded-xl object-cover"
             />
